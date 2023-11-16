@@ -3,7 +3,7 @@ targetScope = 'resourceGroup'
 // Change the below params to suit your deployment needs
 // Go to the modules to amend IP schema, app plan sku/app code stack etc.
 @description('Azure UK South region.')
-param location string = 'uksouth'
+param location string = resourceGroup().location
 
 @description('Web App resource group name.')
 param rg_web_workload string = 'rg-webapp-prod'
@@ -43,7 +43,7 @@ var frontDoorRouteName = 'webapp-route'
 
 // vNet for integration
 module vnet 'br/public:network/virtual-network:1.1.3' = {
-  name: 'webVnet_deploy'
+  name: '${uniqueString(deployment().name, location)}-webVnet'
   scope: resourceGroup(workloadsSubId, rg_web_workload)
   params: {
     name: 'webapp-vnet'
@@ -69,7 +69,7 @@ module vnet 'br/public:network/virtual-network:1.1.3' = {
 
 // Log Analytics workspace
 module logAnalytics 'br/public:storage/log-analytics-workspace:1.0.3' = {
-  name: 'ala_deploy'
+  name: '${uniqueString(deployment().name, location)}-ala'
   scope: resourceGroup(rg_web_workload)
   params: {
     name: alaName
@@ -79,7 +79,7 @@ module logAnalytics 'br/public:storage/log-analytics-workspace:1.0.3' = {
 
 // Application Insight
 module appInsights 'modules/appInsights/appinsights.bicep' = {
-  name: 'appInsights_deploy'
+  name: '${uniqueString(deployment().name, location)}-appInsights'
   scope: resourceGroup(workloadsSubId, rg_web_workload)
   params: {
     name: appInsightsName
@@ -92,7 +92,7 @@ module appInsights 'modules/appInsights/appinsights.bicep' = {
 
 // Azure App Plan
 module webAppPlan 'modules/webApp/appPlan.bicep' = {
-  name: 'appPlan_deploy'
+  name: '${uniqueString(deployment().name, location)}-appPlan'
   scope: resourceGroup(workloadsSubId, rg_web_workload)
   params: {
     name: 'appPlan'
@@ -106,7 +106,7 @@ module webAppPlan 'modules/webApp/appPlan.bicep' = {
 
 // Web App resource
 module webApp 'modules/webApp/webApp.bicep' = {
-  name: 'webApp_deploy'
+  name: '${uniqueString(deployment().name, location)}-webApp'
   scope: resourceGroup(workloadsSubId, rg_web_workload)
   params: {
     name: webAppName

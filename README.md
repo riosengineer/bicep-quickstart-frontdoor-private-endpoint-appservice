@@ -2,13 +2,13 @@
 
 Azure Bicep Template to deploy Azure Front Door premium with Private Endpoint to your Azure App service.
 
-With a web log analytics workspace, app insights enabled, system-assigned managed identity enabled with vNet integration ready to plug into your SQL backend (drawing of SQL is for illustration of the architecture). PE to the web app direct from Front Door.
+With a web log analytics workspace, app insights enabled, system-assigned managed identity enabled with vNet integration. PE to the web app direct from Front Door.
 
 ### [Blog post with more information](https://rios.engineer/seamlessly-deploy-azure-front-door-premium-with-private-endpoint-to-app-services)
 
 ## Azure Architecture
 
-![afd-pe-app-service-architecture](https://rios.engineer/wp-content/uploads/2023/11/afd-webapp-pe-drawing.png "AFD Premium with Private Endpoint to App Services Architecture.")
+![afd-pe-app-service-architecture-draw](https://rios.engineer/wp-content/uploads/2023/11/afd-webapp-pe-drawing.png? "AFD Premium with Private Endpoint to App Services Architecture.")
 
 ## Getting started
 
