@@ -8,7 +8,7 @@ param location string = resourceGroup().location
 @description('Web App resource group name.')
 param rg_web_workload string = 'rg-webapp-prod'
 
-@description('Connectivity landing zone subid.')
+@description('Workload / corp / core landing zone subid.')
 param workloadsSubId string = '00000000-0000-0000-0000-000000000000'
 
 @description('Log analytics workspace name.')

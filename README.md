@@ -21,8 +21,8 @@ With a web log analytics workspace, app insights enabled, system-assigned manage
 ### Deploy
 
 1. Fork the repository
-2. Amend the main.bicep file parameters to suit your deployment naming, subscription guid & existing resource group names
-3. Deploy:
+2. Amend the main.bicep file parameters to suit your deployment naming, subscription guid for the app service location & existing resource group names
+3. Deploy (will deploy Front Door to here only and use the Bicep scopes for everything else):
 
 ```javascript
 az deployment group create --resource-group 'your-fd-rg-here'  -f .\main.bicep
