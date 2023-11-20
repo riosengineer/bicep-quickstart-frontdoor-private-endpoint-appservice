@@ -133,9 +133,6 @@ module webApp 'modules/webApp/webApp.bicep' = {
       systemAssigned: true
     }
   }
-  dependsOn: [
-    webAppPlan
-  ]
 }
 
 
