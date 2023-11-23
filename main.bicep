@@ -20,6 +20,18 @@ param appInsightsName string = 'appinsights-name'
 @description('Azure app service name.')
 param webAppName string = 'webapp-001'
 
+@description('Time date now for tag creation and unique names.')
+param timeNow string = utcNow('u')
+
+@description('Azure tags for the resources.')
+param Tags object = {
+  ApplicationName: 'Web App'
+  Owner: 'Contoso'
+  CostCentre: 'N/A'
+  Env: 'Production'
+  Created: timeNow
+}
+
 @description('The name of the Front Door endpoint to create. This must be globally unique.')
 param afdWebEndpoint string = 'afd-${uniqueString(resourceGroup().id)}'
 
@@ -52,7 +64,7 @@ module vnet 'br/public:network/virtual-network:1.1.3' = {
     ]
     subnets: [
       {
-        name: 'webapp-snet'
+        name: 'webapp-snet' // note: for each web app created with vnet integration it needs its own subnet. Change name accordingly if this is too generic
         addressPrefix: '10.1.1.0/24'
         delegations: [
           {
@@ -64,6 +76,7 @@ module vnet 'br/public:network/virtual-network:1.1.3' = {
         ]
       }
     ]
+    tags: Tags
   }
 }
 
@@ -74,6 +87,7 @@ module logAnalytics 'br/public:storage/log-analytics-workspace:1.0.3' = {
   params: {
     name: alaName
     location: location
+    tags: Tags
   }
 }
 
@@ -87,6 +101,7 @@ module appInsights 'modules/appInsights/appinsights.bicep' = {
     workspaceResourceId: logAnalytics.outputs.id
     kind: 'web'
     applicationType: 'web'
+    tags: Tags
   }
 }
 
@@ -101,6 +116,7 @@ module webAppPlan 'modules/webApp/appPlan.bicep' = {
       name: 'S1'
     }
     kind: 'App'
+    tags: Tags
   }
 }
 
@@ -118,20 +134,30 @@ module webApp 'modules/webApp/webApp.bicep' = {
     appInsightResourceId: appInsights.outputs.resourceId
     virtualNetworkSubnetId: vnet.outputs.subnetResourceIds[0]
     siteConfig: {
+      use32BitWorkerProcess: false
       detailedErrorLoggingEnabled: true
       httpLoggingEnabled: true
       requestTracingEnabled: true
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
       alwaysOn: true
+      windowsFxVersion: 'ASPNET|4.8' // run az webapp list-runtimes to view available versions
+      // linuxFxversion:
+      metadata: [
+        {
+          name: 'CURRENT_STACK'
+          value: 'dotnet'
+
+        }
+      ]
     }
     appSettingsKeyValuePairs: {
-      name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-      value: appInsights.outputs.instrumentationKey
+      WEBSITE_HTTPLOGGING_RETENTION_DAYS: 7
     }
     managedIdentities: {
       systemAssigned: true
     }
+    tags: Tags
   }
 }
 
@@ -147,6 +173,7 @@ resource frontDoorProfile 'Microsoft.Cdn/profiles@2021-06-01' = {
     webApp
     webAppPlan
   ]
+  tags: Tags
 }
 
 // Front Door endpoint(s)
