@@ -1,5 +1,8 @@
 targetScope = 'resourceGroup'
 
+metadata name = 'Quickstart Template AFD to Web App'
+metadata description = 'Azure Front Door Premium + WAF with Private Link to Azure App Bicep template'
+
 // Change the below params to suit your deployment needs
 // Go to the modules to amend IP schema, app plan sku/app code stack etc.
 @description('Azure UK South region.')
@@ -42,10 +45,19 @@ param afdWebEndpoint string = 'afd-${uniqueString(resourceGroup().id)}'
 ])
 param frontDoorSkuName string = 'Premium_AzureFrontDoor'
 
+@description('The WAF policy mode. In "Prevention" mode, the WAF will block requests it detects as malicious. In "Detection" mode, the WAF will not block requests and will simply log the request.')
+@allowed([
+  'Detection'
+  'Prevention'
+])
+param wafMode string = 'Prevention'
+
 var frontDoorProfileName = 'afdpremium-web'
 var frontDoorOriginGroupName = 'webapp-origin-group'
 var frontDoorOriginName = 'webapp-origin-group'
 var frontDoorRouteName = 'webapp-route'
+var securityPolicyName = 'wafSecurityPolicy'
+var wafPolicyName = 'wafPolicy'
 
 ///////////////
 // Resources //
@@ -204,7 +216,7 @@ resource frontDoorOriginGroup 'Microsoft.Cdn/profiles/originGroups@2021-06-01' =
   }
 }
 
-// Front Door backend - Azure Web App 
+// Front Door origin backend - Azure Web App 
 resource frontDoorOrigin 'Microsoft.Cdn/profiles/originGroups/origins@2022-11-01-preview' = {
   name: frontDoorOriginName
   parent: frontDoorOriginGroup
@@ -232,7 +244,7 @@ resource frontDoorRoute 'Microsoft.Cdn/profiles/afdEndpoints/routes@2021-06-01' 
   name: frontDoorRouteName
   parent: frontDoorEndpoint
   dependsOn: [
-    frontDoorOrigin // This explicit dependency is required to ensure that the origin group is not empty when the route is created.
+    frontDoorOrigin
   ]
   properties: {
     originGroup: {
@@ -248,6 +260,61 @@ resource frontDoorRoute 'Microsoft.Cdn/profiles/afdEndpoints/routes@2021-06-01' 
     forwardingProtocol: 'HttpsOnly'
     linkToDefaultDomain: 'Enabled'
     httpsRedirect: 'Enabled'
+  }
+}
+
+// WAF Policy with DRS 2.1 and Bot Manager 1.0
+resource wafPolicy 'Microsoft.Network/frontDoorWebApplicationFirewallPolicies@2022-05-01' = {
+  name: wafPolicyName
+  location: 'Global'
+  sku: {
+    name: 'Premium_AzureFrontDoor'
+  }
+  properties: {
+    policySettings: {
+      enabledState: 'Enabled'
+      mode: wafMode
+    }
+    managedRules: {
+      managedRuleSets: [
+        {
+          ruleSetType: 'Microsoft_DefaultRuleSet'
+          ruleSetVersion: '2.1'
+          ruleSetAction: 'Block'
+        }
+        {
+          ruleSetType: 'Microsoft_BotManagerRuleSet'
+          ruleSetVersion: '1.0'
+          ruleSetAction: 'Block'
+        }
+      ]
+    }
+  }
+}
+
+// Attach WAF Policy to endpoint
+resource cdn_waf_security_policy 'Microsoft.Cdn/profiles/securitypolicies@2021-06-01' = {
+  parent: frontDoorProfile
+  name: securityPolicyName
+  properties: {
+    parameters: {
+      wafPolicy: {
+        id: wafPolicy.id
+      }
+      associations: [
+        {
+          domains: [
+            {
+            id: frontDoorEndpoint.id
+            }
+          ]
+          patternsToMatch: [
+            '/*'
+          ]
+        }
+      ]
+      type: 'WebApplicationFirewall'
+    }
   }
 }
 
